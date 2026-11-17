@@ -9,7 +9,7 @@
 
 | Nome | Matrícula | Usuário do GitHub |
 | --- | --- | --- |
-|  |  |  |
+| João Marcos Sampaio de Oliveira | 2396454 | jusampaio1906-coder |
 
 ## O cenário
 
