@@ -3,8 +3,8 @@
 -- Disciplina: Manipulação de Dados / Banco de Dados II (ADS242N01)
 -- Professor: Aguinaldo Neto
 --
--- Aluno: Cláudio Manoel
--- Matrícula: 2418865
+-- Aluno: João Marcos Sampaio de Oliveira
+-- Matrícula: 2396454
 --
 -- Escreva cada resposta logo abaixo do comentário da questão.
 -- Comandos que a atividade pede para FALHAR devem ficar comentados,
