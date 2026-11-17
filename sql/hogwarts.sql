@@ -221,54 +221,124 @@ UNION ALL SELECT 'log_auditoria',   COUNT(*) FROM log_auditoria;
 -- 2. MANUTENÇÃO PÓS-CARGA (ALTER E UPDATE)
 -- =====================================================================
 -- Questão 1
+ALTER TABLE aluno ADD COLUMN email VARCHAR(100);
 
 -- Questão 2
+ALTER TABLE matricula ADD COLUMN situacao VARCHAR(20) DEFAULT 'Cursando';
 
 -- Questão 3
+ALTER TABLE produto ADD COLUMN ativo CHAR(1) DEFAULT 'S';
 
 -- Questão 4
+ALTER TABLE casa MODIFY COLUMN fundador VARCHAR(100);
 
 -- Questão 5
+ALTER TABLE professor RENAME COLUMN data_contratacao TO data_admissao;
 
 -- Questão 6
+UPDATE aluno
+SET email = CONCAT(LOWER(REPLACE(nome, ' ', '.')), '@hogwarts.edu');
 
 -- Questão 7
+ALTER TABLE aluno ADD CONSTRAINT uq_aluno_email UNIQUE (email);
 
 -- Questão 8
+UPDATE matricula
+SET nota = LEAST(nota + 0.5, 10)
+WHERE id_disc IN (
+    SELECT d.id_disc
+    FROM disciplina d
+    JOIN professor p ON p.id_prof = d.id_prof
+    WHERE p.nome = 'Remo Lupin'
+);
+-- Confira: Harry fica com 10.00 em Defesa Contra as Artes das Trevas.
+SELECT a.nome, d.nome_disc, m.nota
+FROM matricula m
+JOIN aluno a ON a.id_aluno = m.id_aluno
+JOIN disciplina d ON d.id_disc = m.id_disc
+WHERE a.nome = 'Harry Potter'
+  AND d.nome_disc = 'Defesa Contra as Artes das Trevas';
 
 -- Questão 9
+UPDATE matricula
+SET situacao = CASE WHEN nota >= 6 THEN 'Aprovado' ELSE 'Reprovado' END;
+-- Confira: 7 matrículas reprovadas.
+SELECT situacao, COUNT(*) AS total FROM matricula GROUP BY situacao;
 
 -- Questão 10
+UPDATE professor
+SET salario = salario * 1.10
+WHERE id_casa IS NOT NULL
+  AND data_admissao < '1980-01-01';
+-- Confira: Minerva McGonagall passa a ganhar 10450.00.
+SELECT nome, salario, data_admissao FROM professor WHERE id_casa IS NOT NULL;
 
 -- Questão 11
+UPDATE produto SET ativo = 'N' WHERE estoque = 0;
 
 -- Questão 12
+UPDATE produto SET preco = preco * 0.8 WHERE loja = 'Dedosdemel';
+-- Confira: o Sapo de Chocolate passa a custar 1.60.
+SELECT nome_produto, loja, preco, estoque, ativo
+FROM produto WHERE loja = 'Dedosdemel';
 
 
 -- =====================================================================
 -- 3. REMOÇÃO DE DADOS (DELETE) E TESTES DE RESTRIÇÕES
 -- =====================================================================
 -- Questão 13
--- Erro:
--- Explicação:
+-- DELETE FROM casa WHERE nome_casa = 'Sonserina';
+-- Erro: ERROR 1451 (23000): Cannot delete or update a parent row: a foreign
+--       key constraint fails (`hogwarts`.`aluno`, CONSTRAINT `fk_aluno_casa`
+--       FOREIGN KEY (`id_casa`) REFERENCES `casa` (`id_casa`))
+-- Explicação: a casa é referenciada por professor (fk_prof_casa) e por aluno
+--   (fk_aluno_casa); o MySQL reclama da primeira FK que encontra. Para
+--   excluí-la seria preciso antes reatribuir ou excluir esses registros
+--   (a FK padrão é RESTRICT).
 
 -- Questão 14
--- Erro:
--- Explicação:
+-- INSERT INTO aluno (nome, ano_escolar, id_casa) VALUES ('Dobby', 8, 1);
+-- Erro: ERROR 3819 (HY000): Check constraint 'chk_aluno_ano' is violated.
+-- Explicação: a CHECK exige ano_escolar entre 1 e 7; o 8º ano não existe em
+--   Hogwarts (e Dobby nem é aluno).
 
 -- Questão 15
--- Erro:
--- Explicação:
+-- INSERT INTO aluno (nome, ano_escolar, id_casa, email)
+-- VALUES ('Harry Potter (Polissuco)', 5, 1, 'harry.potter@hogwarts.edu');
+-- Erro: ERROR 1062 (23000): Duplicate entry 'harry.potter@hogwarts.edu'
+--       for key 'aluno.uq_aluno_email'
+-- Explicação: a restrição UNIQUE uq_aluno_email impede dois alunos com o
+--   mesmo e-mail; o e-mail do Harry original já existe.
 
 -- Questão 16
--- Erro:
--- Explicação:
+-- DELETE FROM professor WHERE nome = 'Severo Snape';
+-- Erro: ERROR 1451 (23000): Cannot delete or update a parent row: a foreign
+--       key constraint fails (`hogwarts`.`disciplina`, CONSTRAINT `fk_disc_prof`
+--       FOREIGN KEY (`id_prof`) REFERENCES `professor` (`id_prof`))
+-- Explicação: Snape ministra disciplinas (Poções) e tem registros de pontos;
+--   as FKs fk_disc_prof e fk_pontos_prof impedem a exclusão.
 
 -- Questão 17
+DELETE FROM professor WHERE nome = 'Gilderoy Lockhart';
+-- Este funciona porque Lockhart não ministra nenhuma disciplina (a disciplina
+-- de Defesa Contra as Artes das Trevas é do Lupin) e não possui registros de
+-- pontos: nada o referencia, então nenhuma FK é violada.
 
 -- Questão 18
+DELETE FROM matricula
+WHERE id_aluno IN (SELECT id_aluno FROM aluno WHERE nome = 'Vicente Crabbe');
+
+DELETE FROM aluno WHERE nome = 'Vicente Crabbe';
 
 -- Questão 19
+DELETE FROM disciplina
+WHERE id_disc NOT IN (SELECT id_disc FROM matricula);
+
+-- Confira: 8 professores, 13 alunos, 8 disciplinas e 33 matrículas.
+SELECT 'professor'  AS tabela, COUNT(*) AS registros FROM professor
+UNION ALL SELECT 'aluno',      COUNT(*) FROM aluno
+UNION ALL SELECT 'disciplina', COUNT(*) FROM disciplina
+UNION ALL SELECT 'matricula',  COUNT(*) FROM matricula;
 
 
 -- =====================================================================
